@@ -1,41 +1,42 @@
 package com.tg;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
-        try (Socket socket = new Socket("localhost", 5000)) {
-
-            socket.setSoTimeout(5000);
-            BufferedReader echoes = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream()));
-            PrintWriter stringToEcho = new PrintWriter(socket.getOutputStream(), true);
+        try {
+            InetAddress address = InetAddress.getLocalHost();  // getByName()
+            DatagramSocket datagramSocket = new DatagramSocket();
 
             Scanner scanner = new Scanner(System.in);
             String echoString;
-            String response;
 
             do {
                 System.out.println("Enter string to be echoed: ");
                 echoString = scanner.nextLine();
 
-                stringToEcho.println(echoString);
-                if (!echoString.equals("exit")) {
-                    response = echoes.readLine();
-                    System.out.println(response);
-                }
+                byte[] buffer = echoString.getBytes();
+
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 5000);
+                datagramSocket.send(packet);
+
+                byte[] buffer2 = new byte[50];
+                packet = new DatagramPacket(buffer2, buffer2.length);
+                datagramSocket.receive(packet);
+                System.out.println("Text received is: " + new String(buffer2, 0, packet.getLength()));
+
             } while (!echoString.equals("exit"));
+
         } catch (SocketTimeoutException e) {
             System.out.println("The socket timed out");
         } catch (IOException e) {
-            System.out.println("Client Error: " + e.getMessage());
+            System.out.println("Client error: " + e.getMessage());
         }
     }
 }
